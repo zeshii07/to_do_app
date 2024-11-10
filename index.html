@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <title>To Do App</title>
+</head>
+
+<body>
+  <div class="taskdiv ml-52 mt-20">
+    <h1 class="text-red-700 font-extrabold text-5xl">To Do list</h1>
+    <form id="form" class="mt-4 ml-4">
+      <input type="number" name="id" placeholder="Enter Task number" id="id" class="block shadow-md">
+      <input type="text" name="task" placeholder="Enter Task to be done" id="task" class="block mt-2 shadow-md">
+      <button type="submit" class="mt-2 bg-blue-900 shadow-lg rounded-lg">Add Task</button>
+    </form>
+  </div>
+  <h1 class="mt-4 ml-24 font-extrabold text-rose-800">Pending tasks</h1>
+  <div class="output ml-24 mt-8 list-decimal text-purple-800 font-semibold" id="tasklist"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const list = document.getElementById("tasklist");
+
+      function fetchTasks() {
+        fetch('/tasks')
+          .then(response => response.json())
+          .then(tasks => {
+            list.innerHTML = '';
+            tasks.forEach(task => {
+              const li = document.createElement("li");
+              li.textContent = task[1];
+
+              const deleteButton = document.createElement("button");
+              deleteButton.textContent = "Delete";
+              deleteButton.classList.add("ml-2", "bg-red-500", "text-white", "rounded");
+              deleteButton.onclick = () => deleteTask(task[0]);
+
+              const updateButton = document.createElement("button");
+              updateButton.textContent = "Update";
+              updateButton.classList.add("ml-2", "bg-yellow-500", "text-white", "rounded");
+              updateButton.onclick = () => updateTask(task[0], task[1]);
+
+              li.appendChild(deleteButton);
+              li.appendChild(updateButton);
+              list.appendChild(li);
+            });
+          })
+          .catch(err => console.error('Error:', err));
+      }
+
+      function deleteTask(id) {
+        fetch(`/delete/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+          .then(response => response.json())
+          .catch(err => console.error('Error:', err));
+        fetchTasks();
+      }
+
+      function updateTask(id, oldTask) {
+        const newTask = prompt("Edit your task:", oldTask);
+        if (newTask && newTask !== oldTask) {
+          fetch(`/update/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ task: newTask })
+          })
+            .then(response => response.json())
+            .catch(err => console.error('Error:', err));
+        }
+        fetchTasks();
+      }
+
+      document.getElementById("form").onsubmit = function (event) {
+        event.preventDefault();
+        const id = document.getElementById("id").value;
+        const task = document.getElementById("task").value;
+        fetch('/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id, task })
+        })
+          .then(response => response.json())
+          .then(() => {
+            document.getElementById("id").value = '';
+            document.getElementById("task").value = '';
+            fetchTasks();
+          })
+          .catch(err => console.error('Error:', err));
+      };
+
+      fetchTasks();
+    });
+  </script>
+</body>
+
+</html>
